@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Felix Rieseberg <felix@felixrieseberg.com>
+Date: Tue, 9 Jun 2020 09:10:17 -0700
+Subject: fix: If not already loaded, load advapi32
+
+As of Electron 9, we have a dependency on advapi32.dll. That dll contains
+everything Windows would consider "advanced", like the registry, Windows
+services, user account management, and some other stuff. It's fair that
+Node expects the module to be loaded.
+
+Chrome explicitly delay-loads it, so on some machines, we've seen Electron
+crash hard because the "gimme advapi32" code is running before the dll
+was loaded. It'll be loaded either way, this patch ensures that we do so
+when we haven't already.
+
+
+diff --git a/deps/uv/src/win/winapi.c b/deps/uv/src/win/winapi.c
+index 85a9de8a2295ec3250f9ae41f5ef6dbe72dc2a8a..122af77e66f5ec814c21e1ff8f0e82d1c59cc807 100644
+--- a/deps/uv/src/win/winapi.c
++++ b/deps/uv/src/win/winapi.c
+@@ -141,7 +141,10 @@ void uv_winapi_init(void) {
+
+   advapi32_module = GetModuleHandleA("advapi32.dll");
+   if (advapi32_module == NULL) {
+-    uv_fatal_error(GetLastError(), "GetModuleHandleA");
++    advapi32_module = LoadLibraryA("advapi32.dll");
++    if (advapi32_module == NULL) {
++      uv_fatal_error(GetLastError(), "GetModuleHandleA");
++    }
+   }
+
+   pRtlGenRandom =
