@@ -13,13 +13,12 @@ crash hard because the "gimme advapi32" code is running before the dll
 was loaded. It'll be loaded either way, this patch ensures that we do so
 when we haven't already.
 
-
 diff --git a/deps/uv/src/win/winapi.c b/deps/uv/src/win/winapi.c
 index 85a9de8a2295ec3250f9ae41f5ef6dbe72dc2a8a..122af77e66f5ec814c21e1ff8f0e82d1c59cc807 100644
 --- a/deps/uv/src/win/winapi.c
 +++ b/deps/uv/src/win/winapi.c
 @@ -141,7 +141,10 @@ void uv_winapi_init(void) {
-
+ 
    advapi32_module = GetModuleHandleA("advapi32.dll");
    if (advapi32_module == NULL) {
 -    uv_fatal_error(GetLastError(), "GetModuleHandleA");
@@ -28,5 +27,5 @@ index 85a9de8a2295ec3250f9ae41f5ef6dbe72dc2a8a..122af77e66f5ec814c21e1ff8f0e82d1
 +      uv_fatal_error(GetLastError(), "GetModuleHandleA");
 +    }
    }
-
+ 
    pRtlGenRandom =
